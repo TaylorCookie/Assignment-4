@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <title></title>
+    <meta name="description" content="" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="styles.css" />
+
+    <script src="https://www.gstatic.com/firebasejs/5.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/5.10.1/firebase-firestore.js"></script>
+  </head>
+  <body>
+    <h1>Animal Shelter</h1>
+
+    <h3>Add A New Animal</h3>
+    <div class="content">
+      <form id="add-animal">
+        <table>
+          <tr>
+            <th><label for="new_name">Name</label></th>
+            <th><label for="new_species">Species</label></th>
+            <th><label for="new_breed">Breed</label></th>
+            <th><label for="new_age">Age</label></th>
+            <th><label for="new_weight">Weight</label></th>
+
+            <th><label for="new_adopted">Adopted?</label></th>
+          </tr>
+
+          <tr>
+            <td><textarea for="new_name" name="new_name"></textarea></td>
+            <td><textarea for="new_species" name="new_species"></textarea></td>
+            <td><textarea for="new_breed" name="new_breed"></textarea></td>
+            <td><textarea for="new_age" name="new_age"></textarea></td>
+            <td><textarea for="new_weight" name="new_weight"></textarea></td>
+            <td>
+              <select for="new_adopted" name="new_adopted">
+                <option for="new_adopted" name="new_adopted" value="false">
+                  No
+                </option>
+                <option for="new_adopted" name="new_adopted" value="true">
+                  Yes
+                </option>
+              </select>
+            </td>
+          </tr>
+        </table>
+
+        <button class="add_new_animal_btn" type="submit">Submit</button>
+      </form>
+
+      <h3>Current Animals</h3>
+      <table id="current-animals">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Species</th>
+            <th>Breed</th>
+            <th>Age</th>
+            <th>Weight</th>
+            <th>Adopted</th>
+            <th>Edit?</th>
+            <th>Save Changes</th>
+            <th>Delete?</th>
+          </tr>
+        </thead>
+
+        <tbody id="current-animals-body"></tbody>
+      </table>
+    </div>
+
+    <script type="module">
+      // Import the functions you need from the SDKs you need
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/9.4.0/firebase-app.js";
+
+      // TODO: Add SDKs for Firebase products that you want to use
+      // https://firebase.google.com/docs/web/setup#available-libraries
+
+      // Your web app's Firebase configuration
+      const firebaseConfig = {
+        apiKey: "AIzaSyDua5JEsBlOY9jyLvIgSO6foHoHT1SHn_0",
+        authDomain: "animal-shelter-23473.firebaseapp.com",
+        projectId: "animal-shelter-23473",
+        storageBucket: "animal-shelter-23473.appspot.com",
+        messagingSenderId: "805401732898",
+        appId: "1:805401732898:web:2f13c434a74daff75ba77b",
+      };
+
+      // Initialize Firebase
+      const app = firebase.initializeApp(firebaseConfig);
+      const db = firebase.firestore();
+
+      //get elements
+      const animalTableBody = document.querySelector("#current-animals-body");
+      const form = document.querySelector("#add-animal");
+
+      //listener for edit button click
+      animalTableBody.addEventListener("click", (e) => {
+        e.preventDefault();
+
+        //ignore all clicks that are not on an edit button
+        if (!e.target.classList.contains("edit_btn")) {
+          return;
+        }
+
+        //get the tr from the target
+        const trClicked = e.target.parentElement.parentElement;
+
+        //setup the fields to be edited
+        for (let i = 0; i < 6; i++) {
+          //copy and clear the info inside of each td
+          let temp = trClicked.childNodes[i].innerHTML;
+          trClicked.childNodes[i].innerHTML = "";
+
+          let input = document.createElement("input");
+          input.value = `${temp}`;
+
+          //add back in the field as editable
+          trClicked.childNodes[i].appendChild(input);
+        }
+
+        //enable the save button
+        trClicked.childNodes[7].childNodes[0].disabled = false;
+      });
+
+      //listener for save button clicked
+      animalTableBody.addEventListener("click", (e) => {
+        e.preventDefault();
+
+        //ignore all clicks that are not on an edit button
+        if (!e.target.classList.contains("save_btn")) {
+          return;
+        }
+
+        //get the tr from the target
+        const trClicked = e.target.parentElement.parentElement;
+
+        let arr = new Array(6);
+
+        //get the info and send the set request
+        for (let i = 0; i < 6; i++) {
+          //copy the info from each td
+          arr[i] = trClicked.childNodes[i].childNodes[0].value;
+        }
+
+        // save all the data
+        db.collection("animal").doc(e.target.id).set({
+          name: arr[0],
+          species: arr[1],
+          breed: arr[2],
+          age: arr[3],
+          weight: arr[4],
+          adopted: arr[5],
+        });
+
+        //rerender the table
+        renderTable();
+      });
+
+      //create element and render animal
+      function renderAnimal(doc) {
+        let tr = document.createElement("tr");
+        let name = document.createElement("td");
+        let species = document.createElement("td");
+        let breed = document.createElement("td");
+        let age = document.createElement("td");
+        let weight = document.createElement("td");
+        let adopted = document.createElement("td");
+        let editTd = document.createElement("td");
+        let deleteTd = document.createElement("td");
+        let saveTd = document.createElement("td");
+
+        let saveButton = document.createElement("button");
+        saveButton.innerHTML = "Save";
+        saveButton.classList.add("save_btn");
+        saveButton.disabled = "true";
+        saveButton.setAttribute("id", doc.id);
+
+        let editButton = document.createElement("button");
+        editButton.innerHTML = "Edit";
+        editButton.classList.add("edit_btn");
+        editButton.setAttribute("id", doc.id);
+
+        let deleteButton = document.createElement("button");
+        deleteButton.innerHTML = "Delete";
+        deleteButton.classList.add("delete_btn");
+        deleteButton.setAttribute("id", doc.id);
+
+        tr.setAttribute("data-id", doc.id);
+        name.textContent = doc.data().name;
+        species.textContent = doc.data().species;
+        breed.textContent = doc.data().breed;
+        age.textContent = doc.data().age;
+        weight.textContent = doc.data().weight;
+        adopted.textContent = doc.data().adopted;
+
+        tr.appendChild(name);
+        tr.appendChild(species);
+        tr.appendChild(breed);
+        tr.appendChild(age);
+        tr.appendChild(weight);
+        tr.appendChild(adopted);
+        tr.appendChild(editTd);
+        editTd.appendChild(editButton);
+        tr.appendChild(saveTd);
+        saveTd.appendChild(saveButton);
+        tr.appendChild(deleteTd);
+        deleteTd.appendChild(deleteButton);
+
+        animalTableBody.appendChild(tr);
+      }
+
+      //get all data, then render inside of the table
+      function renderTable() {
+        //clear out the table of any old data
+        animalTableBody.innerHTML = "";
+
+        //call to the database and then render a new row for each collection
+        db.collection("animal")
+          .get()
+          .then((snapshot) => {
+            snapshot.docs.forEach((doc) => {
+              renderAnimal(doc);
+            });
+          });
+      }
+
+      //posting new data to database
+      form.addEventListener("submit", (e) => {
+        e.preventDefault(); //prevent reload of page
+
+        db.collection("animal").add({
+          name: form.new_name.value,
+          species: form.new_species.value,
+          breed: form.new_breed.value,
+          age: form.new_age.value,
+          weight: form.new_weight.value,
+          adopted: form.new_adopted.value,
+        });
+
+        //clear out the fields
+        form.new_name.value = "";
+        form.new_species.value = "";
+        form.new_breed.value = "";
+        form.new_age.value = "";
+        form.new_weight.value = "";
+
+        //rerender the table
+        renderTable();
+      });
+
+      //patching new data
+
+      //deleting data then rerendering
+      animalTableBody.addEventListener("click", (e) => {
+        e.preventDefault();
+
+        //ignore all clicks that are not on a delete button
+        if (!e.target.classList.contains("delete_btn")) {
+          return;
+        }
+
+        //send request to delete the collection with the id
+        db.collection("animal").doc(e.target.id).delete();
+
+        //rerender the table
+        renderTable();
+      });
+
+      //call to render the data to the table
+      renderTable();
+    </script>
+
+    <script src="app.js" async defer></script>
+  </body>
+</html>
